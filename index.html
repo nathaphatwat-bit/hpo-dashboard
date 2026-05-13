@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPO Dashboard – โรงพยาบาลเทพรัตน์นครราชสีมา</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --navy:   #1F4E79;
+    --blue:   #2E75B6;
+    --lblue:  #5BA3D9;
+    --sky:    #BDD7EE;
+    --light:  #EBF3FB;
+    --green:  #70AD47;
+    --lgreen: #E2EFDA;
+    --yellow: #FFD700;
+    --orange: #ED7D31;
+    --red:    #C00000;
+    --lred:   #FFF2F2;
+    --gray:   #595959;
+    --lgray:  #F5F5F5;
+    --white:  #FFFFFF;
+    --text:   #1A1A2E;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Sarabun', sans-serif;
+    background: #0D1B2A;
+    color: var(--white);
+    min-height: 100vh;
+  }
+
+  /* ── TOP BAR ── */
+  .topbar {
+    background: linear-gradient(135deg, var(--navy) 0%, #0D2645 100%);
+    border-bottom: 2px solid var(--blue);
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .topbar-left { display: flex; align-items: center; gap: 14px; }
+  .logo-circle {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--lblue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 700; color: white;
+    box-shadow: 0 0 12px rgba(46,117,182,0.6);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 12px rgba(46,117,182,0.6); }
+    50% { box-shadow: 0 0 20px rgba(46,117,182,1); }
+  }
+  .topbar-title h1 { font-size: 18px; font-weight: 700; color: var(--white); }
+  .topbar-title p  { font-size: 13px; color: var(--sky); margin-top: 2px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .badge {
+    background: linear-gradient(135deg, var(--green), #55A33A);
+    border-radius: 20px; padding: 6px 16px;
+    font-size: 13px; font-weight: 600; color: white;
+    box-shadow: 0 0 10px rgba(112,173,71,0.4);
+  }
+  .date-tag { color: var(--sky); font-size: 12px; }
+  
+  /* ── CONTROL BUTTONS ── */
+  .control-buttons {
+    display: flex; gap: 8px;
+  }
+  .btn {
+    background: linear-gradient(135deg, var(--blue), var(--lblue));
+    border: none;
+    color: white;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Sarabun', sans-serif;
+  }
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46,117,182,0.4);
+  }
+  .btn:active {
+    transform: translateY(0);
+  }
+  .btn-print { background: linear-gradient(135deg, var(--orange), #F5A25D); }
+  .btn-download { background: linear-gradient(135deg, var(--green), #8FBC5F); }
+  .btn-refresh { background: linear-gradient(135deg, var(--blue), var(--lblue)); }
+
+  /* ── MAIN GRID ── */
+  .main { padding: 20px 24px; max-width: 1600px; margin: 0 auto; }
+
+  /* ── KPI CARDS TOP ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: linear-gradient(135deg, #162033 0%, #1A2A42 100%);
+    border: 1px solid rgba(91,163,217,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    position: relative;
+    overflow: hidden;
+    transition: all .3s ease;
+    animation: fadeIn 0.6s ease-out;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .kpi-card:hover { 
+    transform: translateY(-4px); 
+    box-shadow: 0 12px 28px rgba(0,0,0,.5);
+    border-color: rgba(91,163,217,0.4);
+  }
+  .kpi-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    border-radius: 12px 12px 0 0;
+  }
+  .kpi-card.blue::before   { background: var(--blue); }
+  .kpi-card.green::before  { background: var(--green); }
+  .kpi-card.yellow::before { background: var(--yellow); }
+  .kpi-card.orange::before { background: var(--orange); }
+  .kpi-card.red::before    { background: var(--red); }
+
+  .kpi-icon { font-size: 26px; margin-bottom: 8px; animation: bounce 2s infinite; }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .kpi-label { font-size: 11px; color: var(--sky); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .kpi-value { font-size: 28px; font-weight: 700; color: var(--white); line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--sky); margin-top: 4px; }
+  .kpi-trend { font-size: 12px; font-weight: 600; margin-top: 6px; }
+  .kpi-trend.up   { color: var(--green); }
+  .kpi-trend.warn { color: var(--orange); }
+  .kpi-trend.good { color: var(--green); }
+
+  /* ── SECTION GRID ── */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 16px; }
+  .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 16px; }
+
+  @media (max-width: 1024px) {
+    .grid-2 { grid-template-columns: 1fr; }
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    .grid-2-1, .grid-1-2 { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .topbar { padding: 10px 14px; }
+    .topbar-title h1 { font-size: 16px; }
+    .topbar-title p { font-size: 11px; }
+    .main { padding: 12px 12px; }
+    .kpi-row { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+    .kpi-card { padding: 12px; }
+    .kpi-value { font-size: 22px; }
+    .grid-3 { grid-template-columns: 1fr; }
+    .control-buttons { flex-direction: column; width: 100%; }
+    .btn { width: 100%; justify-content: center; }
+  }
+
+  /* ── CARDS ── */
+  .card {
+    background: linear-gradient(135deg, #162033 0%, #1A2A42 100%);
+    border: 1px solid rgba(91,163,217,0.15);
+    border-radius: 14px;
+    padding: 18px;
+    animation: slideUp 0.5s ease-out;
+  }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card-title {
+    font-size: 13px; font-weight: 700; color: var(--sky);
+    text-transform: uppercase; letter-spacing: .6px;
+    margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .card-title .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    animation: glow 1.5s ease-in-out infinite;
+  }
+  @keyframes glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  .dot-blue   { background: var(--blue); }
+  .dot-green  { background: var(--green); }
+  .dot-yellow { background: var(--yellow); }
+  .dot-orange { background: var(--orange); }
+  .dot-red    { background: var(--red); }
+
+  /* ── RADAR ── */
+  .radar-wrap { position: relative; height: 280px; }
+
+  /* ── SCORE BARS ── */
+  .score-list { display: flex; flex-direction: column; gap: 10px; }
+  .score-item { }
+  .score-head { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 12px; }
+  .score-name { color: var(--sky); font-weight: 500; }
+  .score-num  { color: var(--white); font-weight: 700; }
+  .score-bar-bg {
+    height: 8px; background: rgba(255,255,255,0.08);
+    border-radius: 4px; overflow: hidden;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 1.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+
+  /* ── KPI TABLE ── */
+  .kpi-table { width: 100%; border-collapse: collapse; font-size: 12px; overflow-x: auto; }
+  .kpi-table th {
+    background: rgba(31,78,121,0.5);
+    color: var(--sky); font-weight: 600;
+    padding: 8px 10px; text-align: left;
+    border-bottom: 1px solid rgba(91,163,217,0.2);
+  }
+  .kpi-table td {
+    padding: 7px 10px; color: var(--white);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .kpi-table tr:hover td { background: rgba(91,163,217,0.06); transition: background 0.2s ease; }
+  .tag {
+    display: inline-block; border-radius: 10px;
+    padding: 2px 8px; font-size: 11px; font-weight: 600;
+  }
+  .tag-good   { background: rgba(112,173,71,0.2);  color: #A8D58A; }
+  .tag-warn   { background: rgba(237,125,49,0.2);  color: #F5A96A; }
+  .tag-danger { background: rgba(192,0,0,0.2);     color: #FF8080; }
+  .tag-info   { background: rgba(46,117,182,0.2);  color: var(--lblue); }
+
+  /* ── LOW SCORE LIST ── */
+  .low-list { display: flex; flex-direction: column; gap: 8px; }
+  .low-item {
+    background: rgba(192,0,0,0.08);
+    border: 1px solid rgba(192,0,0,0.2);
+    border-radius: 8px; padding: 10px 12px;
+    display: flex; gap: 10px; align-items: flex-start;
+    transition: all 0.3s ease;
+    animation: fadeIn 0.6s ease-out;
+  }
+  .low-item:hover {
+    background: rgba(192,0,0,0.12);
+    border-color: rgba(192,0,0,0.4);
+    transform: translateX(4px);
+  }
+  .low-badge {
+    background: var(--red); color: white;
+    font-size: 11px; font-weight: 700;
+    border-radius: 6px; padding: 3px 7px;
+    min-width: 40px; text-align: center; flex-shrink: 0;
+  }
+  .low-text { font-size: 12px; color: rgba(255,255,255,0.85); line-height: 1.4; }
+  .low-text strong { color: #FF8080; display: block; margin-bottom: 2px; }
+
+  /* ── PLAN CARDS ── */
+  .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+  .plan-card {
+    border-radius: 10px; padding: 14px;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+    animation: fadeIn 0.6s ease-out;
+  }
+  .plan-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+  }
+  .plan-card.short  { background: rgba(112,173,71,0.1);  border-color: rgba(112,173,71,0.3); }
+  .plan-card.medium { background: rgba(46,117,182,0.1);  border-color: rgba(46,117,182,0.3); }
+  .plan-card.long   { background: rgba(237,125,49,0.1);  border-color: rgba(237,125,49,0.3); }
+  .plan-period { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+  .plan-card.short  .plan-period { color: var(--green); }
+  .plan-card.medium .plan-period { color: var(--lblue); }
+  .plan-card.long   .plan-period { color: var(--orange); }
+  .plan-item { font-size: 12px; color: rgba(255,255,255,0.8); padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); line-height: 1.4; display: flex; gap: 6px; }
+  .plan-item::before { content: '›'; opacity: .5; flex-shrink: 0; }
+
+  /* ── GAUGE ── */
+  .gauge-wrap { display: flex; flex-direction: column; align-items: center; padding: 10px 0; }
+  .gauge-svg { width: 180px; height: 110px; }
+  .gauge-value { font-size: 32px; font-weight: 700; color: var(--white); margin-top: -8px; animation: fadeIn 0.8s ease-out; }
+  .gauge-label { font-size: 12px; color: var(--sky); margin-top: 4px; text-align: center; }
+  .gauge-level { font-size: 13px; font-weight: 600; color: var(--green); margin-top: 4px; }
+
+  /* ── TREND CHART ── */
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* ── STAFF DONUT ── */
+  .donut-wrap { position: relative; height: 200px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: rgba(255,255,255,0.8); transition: all 0.2s ease; }
+  .legend-item:hover { transform: translateX(4px); color: var(--white); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── FOOTER ── */
+  .footer {
+    text-align: center; color: rgba(255,255,255,0.3);
+    font-size: 11px; padding: 16px;
+    border-top: 1px solid rgba(91,163,217,0.1);
+    margin-top: 20px;
+  }
+
+  /* ── SECTION HEADER ── */
+  .section-hdr {
+    font-size: 11px; font-weight: 700; color: var(--sky);
+    text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid rgba(91,163,217,0.2);
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  /* scroll */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(91,163,217,0.3); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(91,163,217,0.5); }
+
+  /* Print styles */
+  @media print {
+    .topbar, .control-buttons, .footer { display: none !important; }
+    body { background: white; color: black; }
+    .card, .kpi-card { background: white; border: 1px solid #ccc; color: black; }
+    .card-title { color: #333; }
+  }
+</style>
+</head>
+<body id="dashboard">
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo-circle">N</div>
+    <div class="topbar-title">
+      <h1>องค์กรพยาบาลที่มีสมรรถนะสูง (HPO)</h1>
+      <p>โรงพยาบาลเทพรัตน์นครราชสีมา · Debaratana Nakhon Ratchasima Hospital</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="badge">🏆 ระดับ มาก/สูง 75-100%</div>
+    <div class="date-tag">ปีงบประมาณ 2568–2569</div>
+    <div class="control-buttons">
+      <button class="btn btn-print" onclick="printDashboard()" title="พิมพ์ Dashboard">🖨️ พิมพ์</button>
+      <button class="btn btn-download" onclick="downloadPDF()" title="ดาวน์โหลด PDF">⬇️ ดาวน์โหลด</button>
+      <button class="btn btn-refresh" onclick="location.reload()" title="รีเฟรช">🔄 รีเฟรช</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- KPI CARDS -->
+  <div class="kpi-row">
+    <div class="kpi-card blue">
+      <div class="kpi-icon">📊</div>
+      <div class="kpi-label">คะแนน HPO รวม</div>
+      <div class="kpi-value">292</div>
+      <div class="kpi-sub">จาก 388 คะแนน</div>
+      <div class="kpi-trend good">✓ 75.3% — ระดับมาก/สูง</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">💉</div>
+      <div class="kpi-label">Sepsis Bundle</div>
+      <div class="kpi-value">92.6%</div>
+      <div class="kpi-sub">เป้าหมาย &gt;85%</div>
+      <div class="kpi-trend good">✓ ผ่านเกณฑ์</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-icon">😊</div>
+      <div class="kpi-label">ความพึงพอใจผู้ป่วยใน</div>
+      <div class="kpi-value">92.1%</div>
+      <div class="kpi-sub">เป้าหมาย ≥90%</div>
+      <div class="kpi-trend good">✓ ผ่านเกณฑ์</div>
+    </div>
+    <div class="kpi-card yellow">
+      <div class="kpi-icon">👩‍⚕️</div>
+      <div class="kpi-label">พยาบาลวิชาชีพ</div>
+      <div class="kpi-value">292</div>
+      <div class="kpi-sub">คน (82.02% FTE)</div>
+      <div class="kpi-trend warn">⚠ ขาด 64 คน</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="kpi-icon">🔬</div>
+      <div class="kpi-label">CLABSI</div>
+      <div class="kpi-value">2.79</div>
+      <div class="kpi-sub">ต่อ 1,000 วันนอน</div>
+      <div class="kpi-trend warn">⚠ เกินเกณฑ์ ≤1</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: RADAR + SCORE BARS + GAUGE -->
+  <div class="grid-3" style="grid-template-columns:1.2fr 1.4fr 1fr;">
+
+    <!-- RADAR CHART -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-blue"></span>ผลประเมิน 7 ด้าน (HPO Radar)</div>
+      <div class="radar-wrap">
+        <canvas id="radarChart"></canvas>
+      </div>
+    </div>
+
+    <!-- SCORE BARS -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-yellow"></span>คะแนนรายด้าน (เปรียบเทียบ %)</div>
+      <div class="score-list" id="scoreBars"></div>
+    </div>
+
+    <!-- GAUGE + STAFF -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span>ระดับสมรรถนะองค์กร</div>
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" viewBox="0 0 180 100">
+          <!-- background arc -->
+          <path d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="14" stroke-linecap="round"/>
+          <!-- color zones -->
+          <path d="M 20 90 A 70 70 0 0 1 69 29" fill="none" stroke="#C00000" stroke-width="14" stroke-linecap="round" opacity=".5"/>
+          <path d="M 69 29 A 70 70 0 0 1 120 23" fill="none" stroke="#ED7D31" stroke-width="14" stroke-linecap="round" opacity=".5"/>
+          <path d="M 120 23 A 70 70 0 0 1 160 90" fill="none" stroke="#70AD47" stroke-width="14" stroke-linecap="round" opacity=".5"/>
+          <!-- needle at 75.3% -->
+          <line x1="90" y1="90" x2="22" y2="43" stroke="#FFD700" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="90" cy="90" r="6" fill="#FFD700"/>
+        </svg>
+        <div class="gauge-value">75.3%</div>
+        <div class="gauge-label">292 / 388 คะแนน</div>
+        <div class="gauge-level">🏆 ระดับมาก/สูง (75-100%)</div>
+      </div>
+      <div style="margin-top:10px;">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--sky);margin-bottom:4px;">
+          <span>🔴 เริ่มต้น 0-50%</span><span>🟠 ปานกลาง 51-75%</span><span>🟢 สูง &gt;75%</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:linear-gradient(to right,#C00000 0%,#C00000 50%,#ED7D31 50%,#ED7D31 75%,#70AD47 75%,#70AD47 100%);position:relative;">
+          <div style="position:absolute;top:-3px;left:75.3%;width:3px;height:12px;background:#FFD700;border-radius:2px;transform:translateX(-50%);"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: TREND + LOW SCORES -->
+  <div class="grid-2">
+
+    <!-- KPI TREND TABLE -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-blue"></span>แนวโน้มตัวชี้วัดคุณภาพการพยาบาล (2566–2569)</div>
+      <table class="kpi-table">
+        <thead>
+          <tr>
+            <th>ตัวชี้วัด</th>
+            <th>เป้าหมาย</th>
+            <th>2567</th>
+            <th>2568</th>
+            <th>2569*</th>
+            <th>แนวโน้ม</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>HAPI (ต่อ 1,000 วันนอน)</td><td>0</td><td>0</td><td>2.91</td><td>1.18</td><td><span class="tag tag-good">⬇ ดีขึ้น</span></td></tr>
+          <tr><td>Fall ที่มีบาดเจ็บ</td><td>&lt;0.5</td><td>0.13</td><td>0.75</td><td>0.22</td><td><span class="tag tag-good">⬇ ดีขึ้น</span></td></tr>
+          <tr><td>VAP (ต่อ 1,000 วันนอน)</td><td>&lt;0.5</td><td>0.62</td><td>11.36</td><td>1.67</td><td><span class="tag tag-good">⬇ ดีขึ้น</span></td></tr>
+          <tr><td>CAUTI (ต่อ 1,000 วันนอน)</td><td>≤1</td><td>0.26</td><td>0.98</td><td>0.83</td><td><span class="tag tag-good">⬇ ดีขึ้น</span></td></tr>
+          <tr><td>CLABSI (ต่อ 1,000 วันนอน)</td><td>≤1</td><td>0.37</td><td>0</td><td>2.79</td><td><span class="tag tag-danger">⚠ เฝ้าระวัง</span></td></tr>
+          <tr><td>ความพึงพอใจผู้ป่วยใน (%)</td><td>≥90%</td><td>91.40</td><td>92.33</td><td>92.09</td><td><span class="tag tag-good">✓ ผ่านเกณฑ์</span></td></tr>
+          <tr><td>ความพึงพอใจผู้ป่วยนอก (%)</td><td>≥90%</td><td>84.71</td><td>90.31</td><td>82.95</td><td><span class="tag tag-warn">⚠ ต่ำกว่าเกณฑ์</span></td></tr>
+          <tr><td>อัตราลาออก/โอนย้าย (%)</td><td>&lt;2%</td><td>7.92</td><td>3.22</td><td>0</td><td><span class="tag tag-good">⬇ ดีมาก</span></td></tr>
+          <tr><td>Sepsis Bundle Compliance (%)</td><td>&gt;85%</td><td>—</td><td>69.89</td><td>92.61</td><td><span class="tag tag-good">✓ ผ่านเกณฑ์</span></td></tr>
+          <tr><td>คุณภาพการบันทึกพยาบาล (%)</td><td>&gt;85%</td><td>—</td><td>69.81</td><td>77.04</td><td><span class="tag tag-warn">⬆ กำลังพัฒนา</span></td></tr>
+        </tbody>
+      </table>
+      <div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:8px;">*ปี 2569 = ข้อมูล ต.ค.67–มี.ค.68</div>
+    </div>
+
+    <!-- LOW SCORE -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-red"></span>ข้อที่ได้คะแนนต่ำกว่า 3 คะแนน (8 ข้อ) — โอกาสพัฒนา</div>
+      <div class="low-list">
+        <div class="low-item">
+          <div class="low-badge">1.7</div>
+          <div class="low-text"><strong>ระบบบริหารความเสี่ยงเชิงสังคม</strong>มุ่งเน้นด้านคลินิกเป็นหลัก ยังไม่ครอบคลุมมิติสังคมและชุมชน</div>
+        </div>
+        <div class="low-item">
+          <div class="low-badge">1.13</div>
+          <div class="low-text"><strong>การติดตามแผนกลยุทธ์</strong>ผู้บริหารระดับหัวหน้าหอผู้ป่วยมีภาระงานสูง ติดตามไม่สม่ำเสมอ</div>
+        </div>
+        <div class="low-item">
+          <div class="low-badge">1.20</div>
+          <div class="low-text"><strong>การใช้สื่อสังคมออนไลน์</strong>ยังไม่มีนโยบาย Digital Communication อย่างเป็นทางการ</div>
+        </div>
+        <div class="low-item">
+          <div class="low-badge">3.1</div>
+          <div class="low-text"><strong>การวิเคราะห์กลุ่มผู้ใช้บริการ</strong>มีเชิงคลินิก แต่ยังขาดเชิงยุทธศาสตร์และการคาดการณ์</div>
+        </div>
+        <div class="low-item">
+          <div class="low-badge">3.7</div>
+          <div class="low-text"><strong>ระบบสารสนเทศสำหรับผู้ป่วย</strong>IPD Paperless อยู่ระหว่างพัฒนา ยังไม่ครบวงจร</div>
+        </div>
+        <div class="low-item">
+          <div class="low-badge">3.8</div>
+          <div class="low-text"><strong>สื่อสังคมออนไลน์เพื่อประชาสัมพันธ์</strong>ขาดแผนกลยุทธ์ดิจิทัลและผู้รับผิดชอบ</div>
+        </div>
+        <div class="low-item">
+          <div class="low-badge">5.9</div>
+          <div class="low-text"><strong>ความผูกพันและพึงพอใจบุคลากร</strong>Pain Points 77.3% แต่ยังขาดการวิเคราะห์เชิงลึก</div>
+        </div>
+        <div class="low-item">
+          <div class="low-badge">5.16</div>
+          <div class="low-text"><strong>สมดุลชีวิต-งาน (Work-Life Balance)</strong>Well-being Ecosystem อยู่ในระยะเริ่มต้น</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: TREND LINE + STAFF + PLAN -->
+  <div class="grid-3">
+
+    <!-- TREND LINE CHART -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-green"></span>แนวโน้มอัตราลาออกและ Sepsis Bundle</div>
+      <div class="chart-wrap">
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+
+    <!-- STAFF DONUT -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-yellow"></span>สัดส่วนบุคลากรทางการพยาบาล (432 คน)</div>
+      <div class="donut-wrap">
+        <canvas id="donutChart"></canvas>
+      </div>
+      <div class="donut-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#2E75B6;"></div>พยาบาลวิชาชีพ (ผู้ปฏิบัติการ) 251 คน (58.1%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#5BA3D9;"></div>พยาบาลวิชาชีพ (ผู้บริหาร) 41 คน (9.5%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#70AD47;"></div>พนักงานช่วยเหลือคนไข้ 90 คน (20.8%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ED7D31;"></div>ผู้ช่วยพยาบาล 24 คน (5.6%)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#595959;"></div>อื่นๆ 26 คน (6.0%)</div>
+      </div>
+    </div>
+
+    <!-- GENERATION BAR -->
+    <div class="card">
+      <div class="card-title"><span class="dot dot-orange"></span>สัดส่วน Generation พยาบาล</div>
+      <div class="chart-wrap" style="height:140px;">
+        <canvas id="genChart"></canvas>
+      </div>
+      <div style="margin-top:12px;">
+        <div class="card-title" style="margin-bottom:8px;"><span class="dot dot-blue"></span>ข้อมูลองค์กรสำคัญ</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
+          <div style="background:rgba(46,117,182,0.1);border-radius:8px;padding:10px;">
+            <div style="color:var(--sky);font-size:11px;">🏗️ โครงสร้าง</div>
+            <div style="color:white;font-weight:600;margin-top:2px;">6 สาย 16 กลุ่มงาน</div>
+          </div>
+          <div style="background:rgba(112,173,71,0.1);border-radius:8px;padding:10px;">
+            <div style="color:var(--sky);font-size:11px;">🛏️ เตียงทั้งหมด</div>
+            <div style="color:white;font-weight:600;margin-top:2px;">306 เตียง 15 หอผู้ป่วย</div>
+          </div>
+          <div style="background:rgba(237,125,49,0.1);border-radius:8px;padding:10px;">
+            <div style="color:var(--sky);font-size:11px;">👥 อายุเฉลี่ยพยาบาล</div>
+            <div style="color:white;font-weight:600;margin-top:2px;">34 ปี</div>
+          </div>
+          <div style="background:rgba(192,0,0,0.1);border-radius:8px;padding:10px;">
+            <div style="color:var(--sky);font-size:11px;">⚠️ ขาดอัตรากำลัง</div>
+            <div style="color:#FF8080;font-weight:600;margin-top:2px;">64 คน (เป้า 356)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5: DEVELOPMENT PLAN -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title"><span class="dot dot-blue"></span>แผนพัฒนาสู่องค์กรพยาบาลที่มีสมรรถนะสูง — DNRH Nursing HPO Roadmap</div>
+    <div class="plan-grid">
+      <div class="plan-card short">
+        <div class="plan-period">⚡ ระยะสั้น 6-12 เดือน</div>
+        <div class="plan-item">พัฒนา Digital Nursing Communication Policy</div>
+        <div class="plan-item">จัดตั้ง Nursing Digital Team บริหารสื่อออนไลน์</div>
+        <div class="plan-item">ต่อยอด IPD Paperless + Patient Portal</div>
+        <div class="plan-item">สืบสวน CLABSI ผ่าน Root Cause Analysis เร่งด่วน</div>
+        <div class="plan-item">วิเคราะห์ OPD Satisfaction ทุกคลินิก</div>
+      </div>
+      <div class="plan-card medium">
+        <div class="plan-period">🔷 ระยะกลาง 1-2 ปี</div>
+        <div class="plan-item">ขยาย Well-being Ecosystem สู่ระบบถาวร + KPI</div>
+        <div class="plan-item">Nurse Engagement Survey เชิงลึกตาม Generation</div>
+        <div class="plan-item">ขยายระบบบริหารความเสี่ยงสู่มิติสังคม 54 วัด CUP</div>
+        <div class="plan-item">พัฒนา Strategic Dashboard บน Real-Time Analytics</div>
+        <div class="plan-item">Flexible Scheduling ลดปัญหาชั่วโมงทำงานเกิน</div>
+      </div>
+      <div class="plan-card long">
+        <div class="plan-period">🎯 ระยะยาว 2-5 ปี</div>
+        <div class="plan-item">เป้าหมายคะแนน HPO &gt;340 คะแนน (&gt;87%)</div>
+        <div class="plan-item">พัฒนา Telenursing + AI-assisted Clinical Decision</div>
+        <div class="plan-item">Research Output ≥2 เรื่อง/ปี ระดับชาติ/นานาชาติ</div>
+        <div class="plan-item">ยื่นขอรับรอง PMQA เพื่อยืนยันสมรรถนะองค์กร</div>
+        <div class="plan-item">ทุกข้อที่ได้ 2 คะแนน ยกระดับสู่ 3+ ภายใน 18 เดือน</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="footer">
+  Dashboard: องค์กรพยาบาลที่มีสมรรถนะสูง (High Performance Nursing Organization) · โรงพยาบาลเทพรัตน์นครราชสีมา · ข้อมูล ณ พฤษภาคม พ.ศ. 2568 · สร้างเมื่อ 2568-05-13
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────
+const scores = [
+  { label: 'การนำองค์กร',         got: 58,  max: 80  },
+  { label: 'การวางแผนกลยุทธ์',    got: 30,  max: 40  },
+  { label: 'การมุ่งเน้นลูกค้า',   got: 31,  max: 44  },
+  { label: 'การวัดและวิเคราะห์',  got: 46,  max: 60  },
+  { label: 'ทรัพยากรบุคคล',       got: 45,  max: 64  },
+  { label: 'การจัดการกระบวนการ', got: 61,  max: 76  },
+  { label: 'ผลผลิตและผลสัมฤทธิ์', got: 18,  max: 24  },
+];
+
+// ── Score Bars ────────────────────────────────────────────────
+const barColors = [
+  '#2E75B6','#5BA3D9','#70AD47','#FFD700','#ED7D31','#1F4E79','#A0C878'
+];
+const container = document.getElementById('scoreBars');
+scores.forEach((s, i) => {
+  const pct = ((s.got / s.max) * 100).toFixed(1);
+  const color = barColors[i];
+  container.innerHTML += `
+    <div class="score-item">
+      <div class="score-head">
+        <span class="score-name">${s.label}</span>
+        <span class="score-num">${s.got}/${s.max} (${pct}%)</span>
+      </div>
+      <div class="score-bar-bg">
+        <div class="score-bar-fill" style="width:0%;background:${color};" onload="this.style.width='${pct}%'"></div>
+      </div>
+    </div>`;
+});
+
+// Animate bars on load
+setTimeout(() => {
+  document.querySelectorAll('.score-bar-fill').forEach(bar => {
+    const width = bar.style.width;
+    bar.style.width = '0%';
+    setTimeout(() => { bar.style.width = width; }, 100);
+  });
+}, 300);
+
+// ── Radar Chart ───────────────────────────────────────────────
+const radarCtx = document.getElementById('radarChart').getContext('2d');
+new Chart(radarCtx, {
+  type: 'radar',
+  data: {
+    labels: ['การนำองค์กร\n(72.5%)','การวางแผน\nกลยุทธ์\n(75.0%)','การมุ่งเน้น\nลูกค้า\n(70.5%)','การวัดและ\nวิเคราะห์\n(76.7%)','ทรัพยากร\nบุคคล\n(70.3%)','การจัดการ\nกระบวนการ\n(80.3%)','ผลผลิตและ\nผลสัมฤทธิ์\n(75.0%)'],
+    datasets: [{
+      label: 'คะแนน (%)',
+      data: [72.5, 75.0, 70.5, 76.7, 70.3, 80.3, 75.0],
+      backgroundColor: 'rgba(46,117,182,0.2)',
+      borderColor: '#5BA3D9',
+      borderWidth: 2,
+      pointBackgroundColor: '#FFD700',
+      pointBorderColor: '#FFD700',
+      pointRadius: 4,
+      pointHoverRadius: 6,
+    },{
+      label: 'เป้าหมาย 80%',
+      data: [80,80,80,80,80,80,80],
+      backgroundColor: 'rgba(112,173,71,0.05)',
+      borderColor: 'rgba(112,173,71,0.4)',
+      borderWidth: 1,
+      borderDash: [4,4],
+      pointRadius: 0,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      r: {
+        min: 60, max: 85,
+        ticks: { display: false, stepSize: 5 },
+        grid: { color: 'rgba(255,255,255,0.08)' },
+        angleLines: { color: 'rgba(255,255,255,0.08)' },
+        pointLabels: { color: 'rgba(255,255,255,0.6)', font: { size: 9, family: 'Sarabun' } }
+      }
+    },
+    plugins: {
+      legend: { display: true, labels: { color: 'rgba(255,255,255,0.7)', font: { size: 10, family: 'Sarabun' }, boxWidth: 12 } },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#FFD700',
+        bodyColor: 'white',
+        borderColor: 'rgba(91,163,217,0.5)',
+        borderWidth: 1,
+        padding: 10,
+        displayColors: true,
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%`
+        }
+      }
+    }
+  }
+});
+
+// ── Trend Line Chart ──────────────────────────────────────────
+const trendCtx = document.getElementById('trendChart').getContext('2d');
+new Chart(trendCtx, {
+  type: 'line',
+  data: {
+    labels: ['2565','2566','2567','2568','2569*'],
+    datasets: [
+      {
+        label: 'อัตราลาออก/โอนย้าย (%)',
+        data: [13.16, 7.0, 7.92, 3.22, 0],
+        borderColor: '#C00000', backgroundColor: 'rgba(192,0,0,0.1)',
+        borderWidth: 2, tension: 0.4, fill: true,
+        pointBackgroundColor: '#C00000', pointRadius: 4, pointHoverRadius: 6,
+      },
+      {
+        label: 'Sepsis Bundle (%)',
+        data: [null, null, null, 69.89, 92.61],
+        borderColor: '#70AD47', backgroundColor: 'rgba(112,173,71,0.1)',
+        borderWidth: 2, tension: 0.4, fill: false,
+        pointBackgroundColor: '#70AD47', pointRadius: 4, pointHoverRadius: 6,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { ticks: { color: 'rgba(255,255,255,0.5)', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.05)' } },
+      y: { ticks: { color: 'rgba(255,255,255,0.5)', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.05)' } }
+    },
+    plugins: {
+      legend: { labels: { color: 'rgba(255,255,255,0.7)', font:{size:11,family:'Sarabun'}, boxWidth: 12 } },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#FFD700',
+        bodyColor: 'white',
+        borderColor: 'rgba(91,163,217,0.5)',
+        borderWidth: 1,
+      }
+    }
+  }
+});
+
+// ── Donut Chart ───────────────────────────────────────────────
+const donutCtx = document.getElementById('donutChart').getContext('2d');
+new Chart(donutCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['พยาบาลวิชาชีพ (ปฏิบัติการ)','พยาบาลวิชาชีพ (บริหาร)','พนักงานช่วยเหลือคนไข้','ผู้ช่วยพยาบาล','อื่นๆ'],
+    datasets: [{
+      data: [251,41,90,24,26],
+      backgroundColor: ['#2E75B6','#5BA3D9','#70AD47','#ED7D31','#595959'],
+      borderColor: '#162033', borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '65%',
+    plugins: {
+      legend: { display: false },
+      tooltip: { 
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#FFD700',
+        bodyColor: 'white',
+        borderColor: 'rgba(91,163,217,0.5)',
+        borderWidth: 1,
+        callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} คน` } 
+      }
+    }
+  }
+});
+
+// ── Generation Bar ────────────────────────────────────────────
+const genCtx = document.getElementById('genChart').getContext('2d');
+new Chart(genCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Gen Z (6.81%)', 'Gen Y (45.83%)', 'Gen X (17.36%)'],
+    datasets: [{
+      data: [6.81, 45.83, 17.36],
+      backgroundColor: ['#5BA3D9','#2E75B6','#1F4E79'],
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    scales: {
+      x: { ticks: { color: 'rgba(255,255,255,0.5)', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.05)' }, max: 55 },
+      y: { ticks: { color: 'rgba(255,255,255,0.7)', font:{size:11,family:'Sarabun'} }, grid: { display: false } }
+    },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(0,0,0,0.8)',
+        titleColor: '#FFD700',
+        bodyColor: 'white',
+        borderColor: 'rgba(91,163,217,0.5)',
+        borderWidth: 1,
+        callbacks: { label: ctx => ` ${ctx.raw}%` }
+      }
+    }
+  }
+});
+
+// ── Download PDF ──────────────────────────────────────────────
+function downloadPDF() {
+  const element = document.getElementById('dashboard');
+  const opt = {
+    margin: 5,
+    filename: 'HPO_Dashboard_เทพรัตน์.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
+// ── Print ──────────────────────────────────────────────────────
+function printDashboard() {
+  window.print();
+}
+</script>
+</body>
+</html>
